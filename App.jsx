@@ -23,7 +23,7 @@ function LoginModal({ onClose }) {
     <div style={modal.overlay}>
       <div style={modal.box}>
         <button style={modal.closeBtn} onClick={onClose}>✕</button>
-        <h2 style={modal.title}>🔐 Login</h2>
+        <h2 style={modal.title}> Login</h2>
         {loggedIn ? (
           <p style={{ color: '#34d399', textAlign: 'center', fontWeight: 700 }}>
             ✅ Logged in successfully!
@@ -222,14 +222,13 @@ export default function App() {
       {/* ── HEADER ── */}
       <header style={s.header}>
         <div style={s.headerLeft}>
-          <span style={s.logo}>🎯</span>
           <div>
             <div style={s.logoTitle}>CareerCast AI Prediction</div>
             <div style={s.logoSub}>Powered by SpaCy NER + Logistic Regression</div>
           </div>
         </div>
         <button style={s.loginBtn} onClick={() => setShowLogin(true)}>
-          👤 Login
+          Login
         </button>
       </header>
 
@@ -240,13 +239,13 @@ export default function App() {
         <div style={s.leftPanel}>
           {/* Upload Card */}
           <div style={s.card}>
-            <h3 style={s.cardTitle}>📄 Upload Resume</h3>
+            <h3 style={s.cardTitle}>Upload Resume</h3>
             <p style={s.cardDesc}>Upload a PDF or TXT resume to extract skills and predict careers.</p>
 
             {error && <div style={s.errorBox}>{error}</div>}
 
             <label style={{ ...s.uploadBtn, opacity: uploading ? 0.7 : 1 }}>
-              {uploading ? '⏳ Analyzing...' : '📁 Choose Resume (PDF / TXT)'}
+              {uploading ? ' Analyzing...' : 'Choose Resume (PDF / TXT)'}
               <input type="file" accept=".pdf,.txt" style={{ display: 'none' }}
                 onChange={handleFileUpload} disabled={uploading} />
             </label>
@@ -270,7 +269,7 @@ export default function App() {
           {/* NER Highlight Card */}
           {hasResult && (
             <div style={s.card}>
-              <h3 style={s.cardTitle}>🧠 SpaCy NER — Keyword Extraction</h3>
+              <h3 style={s.cardTitle}> SpaCy NER — Keyword Extraction</h3>
               <p style={s.cardDesc}>
                 Keywords extracted from your resume text, highlighted by category:
               </p>
@@ -283,7 +282,6 @@ export default function App() {
         <div style={s.rightPanel}>
           {!hasResult ? (
             <div style={{ ...s.card, textAlign: 'center', padding: '48px 24px' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎯</div>
               <h3 style={{ color: '#64748b', fontWeight: 600 }}>
                 Upload a resume to see predictions
               </h3>
@@ -296,7 +294,7 @@ export default function App() {
               {/* Extracted Skills */}
               <div style={s.card}>
                 <h3 style={s.cardTitle}>
-                  💡 Extracted Skills
+                   Extracted Skills
                   <span style={s.badge}>{extractedSkills.length} found</span>
                 </h3>
                 <div style={s.skillGrid}>
@@ -311,7 +309,7 @@ export default function App() {
 
               {/* Predictions */}
               <div style={s.card}>
-                <h3 style={s.cardTitle}>🏆 Predicted Careers</h3>
+                <h3 style={s.cardTitle}> Predicted Careers</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {predictions.map((item, idx) => {
                     const c = getBadgeColor(item.probability);
