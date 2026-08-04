@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 // ── CONFIGURATION ──────────────────────────────────────────
 // Change this to your deployed Render backend URL
-const BACKEND_URL = 'https://aipoweredcareerintelligenceprogarm-production.up.railway.app';
+const BACKEND_URL = 'https://career-intelligence-backend-2p7t.onrender.com';;
 
 // ── LOGIN MODAL ────────────────────────────────────────────
 function LoginModal({ onClose }) {
@@ -203,7 +203,7 @@ export default function App() {
       setHighlights(data?.highlights || []);
       setHasResult(true);
     } catch (err) {
-      setError(`${err.message}. Please check if the Railway backend is live.`);
+     setError(`${err.message}. Please check if the Render backend is live.`);
     } finally {
       setUploading(false);
     }
