@@ -10,6 +10,7 @@ import joblib
 import spacy
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.manifold import TSNE
 
 app = FastAPI(title="CareerCast AI Prediction")
 
@@ -40,6 +41,33 @@ try:
     print("Model loaded successfully.")
 except Exception as e:
     print(f"Model loading failed: {e}")
+
+# Individual model pipelines, loaded separately so /model-comparison can
+# run the SAME resume through all three and show what each one predicts.
+lr_model = None
+rf_model = None
+xgb_model = None
+try:
+    lr_model = joblib.load("logistic_pipeline.pkl")
+    print("Logistic Regression pipeline loaded.")
+except Exception as e:
+    print(f"Logistic Regression pipeline load failed: {e}")
+try:
+    rf_model = joblib.load("random_forest_pipeline.pkl")
+    print("Random Forest pipeline loaded.")
+except Exception as e:
+    print(f"Random Forest pipeline load failed: {e}")
+try:
+    xgb_model = joblib.load("xgboost_pipeline.pkl")
+    print("XGBoost pipeline loaded.")
+except Exception as e:
+    print(f"XGBoost pipeline load failed: {e}")
+
+ALL_MODELS = {
+    "Logistic Regression": lr_model,
+    "Random Forest": rf_model,
+    "XGBoost": xgb_model,
+}
 
 # --- FEATURE COLUMNS & MAPPINGS ---
 DEFAULT_FEATURE_COLS = [
@@ -185,6 +213,58 @@ def get_sbert_scores(user_skill_names):
         sim = cosine_similarity(user_embedding, embedding.reshape(1, -1))[0][0]
         scores[career] = float(sim)
     return scores
+
+
+# --- t-SNE SKILL EMBEDDING VISUALIZATION ---
+# Genuinely computed from your fine-tuned/pretrained SBERT model — each
+# (skill, career) pair from CAREER_SKILL_REQUIREMENTS is embedded, then
+# projected to 2D with real sklearn TSNE. Cached after first computation
+# since it's the same regardless of which resume is uploaded.
+_tsne_cache = None
+
+
+def compute_tsne_skill_embeddings():
+    global _tsne_cache
+    if sbert is None:
+        return None
+
+    skill_points = []
+    seen = set()
+    for career, skills in CAREER_SKILL_REQUIREMENTS.items():
+        for skill in skills:
+            key = (skill, career)
+            if key in seen:
+                continue
+            seen.add(key)
+            skill_points.append((skill, career))
+
+    texts = [s for s, _ in skill_points]
+    embeddings = sbert.encode(texts)
+
+    n_samples = len(embeddings)
+    perplexity = min(30, max(5, n_samples // 3))
+    tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity, init="pca")
+    coords = tsne.fit_transform(np.array(embeddings))
+
+    points = []
+    for (skill, career), (x, y) in zip(skill_points, coords):
+        points.append({
+            "skill": skill,
+            "category": career,
+            "x": round(float(x), 3),
+            "y": round(float(y), 3),
+        })
+    _tsne_cache = points
+    return points
+
+
+# Precompute once at startup so the first frontend request is fast.
+try:
+    if sbert is not None:
+        compute_tsne_skill_embeddings()
+        print(f"t-SNE skill embeddings precomputed: {len(_tsne_cache) if _tsne_cache else 0} points.")
+except Exception as e:
+    print(f"t-SNE precompute failed: {e}")
 
 
 def get_skill_alignment_metrics(skill_flags, career_name):
@@ -442,3 +522,101 @@ async def upload_resume(file: UploadFile = File(...)):
         raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
+@app.post("/model-comparison")
+async def model_comparison(file: UploadFile = File(...)):
+    """
+    Runs the SAME uploaded resume through all 3 trained models
+    (Logistic Regression, Random Forest, XGBoost) and returns each one's
+    top predicted career + confidence, so the frontend can show a
+    genuine, live side-by-side comparison for this specific resume.
+    """
+    try:
+        if not file.filename.lower().endswith(('.pdf', '.txt')):
+            raise HTTPException(status_code=400, detail="Only PDF or TXT files are supported.")
+
+        file_bytes = await file.read()
+        text = ""
+
+        if file.filename.lower().endswith('.pdf'):
+            with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                for page in pdf.pages:
+                    extracted = page.extract_text()
+                    if extracted:
+                        text += extracted + " "
+        else:
+            text = file_bytes.decode("utf-8", errors="ignore")
+
+        text = text.strip()
+        if not text:
+            raise HTTPException(status_code=400, detail="Could not read text content from file.")
+
+        input_df, found_skills, skill_flags = extract_features(text)
+
+        if mlb is None:
+            raise HTTPException(status_code=503, detail="Label encoder (mlb.pkl) not loaded.")
+
+        comparison = []
+        for model_name, m in ALL_MODELS.items():
+            if m is None:
+                comparison.append({
+                    "model": model_name,
+                    "available": False,
+                    "top_career": None,
+                    "confidence": None,
+                    "top3": [],
+                })
+                continue
+            try:
+                probs = m.predict_proba(input_df)
+                scores = []
+                for idx, job_name in enumerate(mlb.classes_):
+                    prob_val = float(probs[idx][0][1])
+                    scores.append({"role": str(job_name), "probability": round(prob_val * 100, 1)})
+                scores.sort(key=lambda x: x["probability"], reverse=True)
+                top = scores[0] if scores else None
+                comparison.append({
+                    "model": model_name,
+                    "available": True,
+                    "top_career": top["role"] if top else None,
+                    "confidence": top["probability"] if top else None,
+                    "top3": scores[:3],
+                })
+            except Exception as model_err:
+                comparison.append({
+                    "model": model_name,
+                    "available": False,
+                    "error": str(model_err),
+                    "top_career": None,
+                    "confidence": None,
+                    "top3": [],
+                })
+
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "extracted_skills": found_skills,
+            "comparison": comparison,
+        }
+
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+
+
+@app.get("/tsne-visualization")
+async def tsne_visualization():
+    """
+    Returns a 2D t-SNE projection of SBERT embeddings for every skill
+    across all careers in CAREER_SKILL_REQUIREMENTS, so the frontend can
+    render a scatter plot of the skill embedding space, colored by
+    career category.
+    """
+    global _tsne_cache
+    if _tsne_cache is None:
+        compute_tsne_skill_embeddings()
+    if _tsne_cache is None:
+        raise HTTPException(status_code=503, detail="SBERT not available — cannot compute embeddings.")
+    return {"points": _tsne_cache, "categories": list(CAREER_SKILL_REQUIREMENTS.keys())}
