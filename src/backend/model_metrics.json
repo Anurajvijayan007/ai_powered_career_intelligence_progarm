@@ -1,0 +1,30 @@
+{
+  "metric": "Macro F1",
+  "scale": {
+    "min": 0.0,
+    "max": 10.0
+  },
+  "evaluation": {
+    "dataset_rows": 2000,
+    "test_rows": 400,
+    "test_size": 0.2,
+    "random_state": 42
+  },
+  "metrics": [
+    {
+      "model": "Logistic Regression",
+      "macro_f1": 0.7566,
+      "score_out_of_10": 7.6
+    },
+    {
+      "model": "Random Forest",
+      "macro_f1": 0.6342,
+      "score_out_of_10": 6.3
+    },
+    {
+      "model": "XGBoost",
+      "macro_f1": 0.853,
+      "score_out_of_10": 8.5
+    }
+  ]
+}
