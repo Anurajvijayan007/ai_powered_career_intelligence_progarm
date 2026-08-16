@@ -175,7 +175,10 @@ CAREER_SKILL_REQUIREMENTS = {
 SKILL_COLUMNS = [
     'python', 'java', 'c_cpp', 'sql', 'machine_learning',
     'data_analysis', 'cloud_computing', 'cybersecurity',
-    'web_development', 'devops', 'networking'
+    'web_development', 'devops', 'networking',
+    'financial_analysis', 'project_management', 'digital_marketing',
+    'graphic_design', 'accounting', 'sales_strategy',
+    'healthcare_administration', 'content_writing'
 ]
 
 SKILL_DISPLAY_MAP = {
@@ -183,7 +186,11 @@ SKILL_DISPLAY_MAP = {
     'sql': 'SQL', 'machine_learning': 'Machine Learning',
     'data_analysis': 'Data Analysis', 'cloud_computing': 'Cloud Computing',
     'cybersecurity': 'Cybersecurity', 'web_development': 'Web Development',
-    'devops': 'DevOps', 'networking': 'Networking'
+    'devops': 'DevOps', 'networking': 'Networking',
+    'financial_analysis': 'Financial Analysis', 'project_management': 'Project Management',
+    'digital_marketing': 'Digital Marketing', 'graphic_design': 'Graphic Design',
+    'accounting': 'Accounting', 'sales_strategy': 'Sales Strategy',
+    'healthcare_administration': 'Healthcare Administration', 'content_writing': 'Content Writing'
 }
 
 sbert = None
@@ -312,7 +319,9 @@ def get_skill_alignment_metrics(skill_flags, career_name):
     alignment_pct = (len(matched) / len(career_required) * 100) if career_required else 0
     return {
         "matched_skills": matched,
-        "missing_skills": missing[:3],
+        # Return every missing requirement so the UI can show the complete
+        # learning path needed to reach 100% skill alignment.
+        "missing_skills": missing,
         "alignment_score": round(alignment_pct, 1),
     }
 
