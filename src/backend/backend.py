@@ -5,7 +5,6 @@ import io
 import re
 import os
 import json
-import json
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -323,6 +322,125 @@ def get_skill_alignment_metrics(skill_flags, career_name):
         # learning path needed to reach 100% skill alignment.
         "missing_skills": missing,
         "alignment_score": round(alignment_pct, 1),
+    }
+
+
+LEARNING_RESOURCES = {
+    "python": ("Python for Everybody", "https://www.coursera.org/specializations/python"),
+    "sql": ("SQLBolt interactive lessons", "https://sqlbolt.com/"),
+    "machine learning": ("Google Machine Learning Crash Course", "https://developers.google.com/machine-learning/crash-course"),
+    "git": ("Pro Git book", "https://git-scm.com/book/en/v2"),
+    "docker": ("Docker getting-started guide", "https://docs.docker.com/get-started/"),
+    "kubernetes": ("Kubernetes Basics", "https://kubernetes.io/docs/tutorials/kubernetes-basics/"),
+    "aws": ("AWS Skill Builder", "https://explore.skillbuilder.aws/"),
+    "react": ("React Learn", "https://react.dev/learn"),
+}
+
+
+def build_gap_actions(missing_skills):
+    """Turn a raw missing-skill list into an ordered, practical learning plan."""
+    actions = []
+    for index, skill in enumerate(missing_skills):
+        resource_name, resource_url = LEARNING_RESOURCES.get(
+            skill.lower(),
+            (f"Learn {skill} on freeCodeCamp", "https://www.freecodecamp.org/learn/"),
+        )
+        priority = "high" if index < 3 else "medium" if index < 6 else "low"
+        actions.append({
+            "skill": skill,
+            "priority": priority,
+            "recommended_resource": resource_name,
+            "resource_url": resource_url,
+            "practice_task": f"Build a small portfolio project that demonstrates {skill} and document it in your resume.",
+        })
+    return actions
+
+
+async def read_resume_text(file: UploadFile):
+    if not file.filename or not file.filename.lower().endswith((".pdf", ".txt")):
+        raise HTTPException(status_code=400, detail="Only PDF or TXT files are supported.")
+    file_bytes = await file.read()
+    if file.filename.lower().endswith(".pdf"):
+        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+            text = " ".join(page.extract_text() or "" for page in pdf.pages)
+    else:
+        text = file_bytes.decode("utf-8", errors="ignore")
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Could not read text content from file.")
+    return text.strip()
+
+
+def predict_careers(text):
+    """Return ranked model predictions plus extracted resume information."""
+    if model is None or mlb is None:
+        raise HTTPException(status_code=503, detail="Prediction model is unavailable.")
+    highlights = build_highlights(text)
+    input_df, found_skills, skill_flags = extract_features(text)
+    try:
+        probabilities = model.predict_proba(input_df)
+        user_skill_names = [SKILL_DISPLAY_MAP.get(col, col).lower() for col in SKILL_COLUMNS if skill_flags.get(col, 0) == 1]
+        sbert_scores = get_sbert_scores(user_skill_names)
+        predictions = []
+        for index, career in enumerate(mlb.classes_):
+            ml_probability = float(probabilities[index][0][1]) * 100
+            semantic_match = sbert_scores.get(str(career), 0.0) * 100
+            alignment = get_skill_alignment_metrics(skill_flags, str(career))
+            predictions.append({
+                "role": str(career), "ml_probability": round(ml_probability, 1),
+                "sbert_similarity": round(semantic_match, 1),
+                "combined_score": round(0.7 * ml_probability + 0.3 * semantic_match, 1),
+                "probability": round(0.7 * ml_probability + 0.3 * semantic_match, 1),
+                **alignment,
+            })
+        predictions.sort(key=lambda item: item["combined_score"], reverse=True)
+        return {"predictions": predictions, "extracted_skills": found_skills, "skill_flags": skill_flags, "highlights": highlights}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Prediction computation failed: {str(exc)}")
+
+
+@app.post("/predict")
+async def predict(file: UploadFile = File(...)):
+    """Generate ranked career probabilities for a PDF or TXT resume."""
+    text = await read_resume_text(file)
+    result = predict_careers(text)
+    return {
+        "filename": file.filename,
+        "predictions": result["predictions"][:3],
+        "extracted_skills": result["extracted_skills"],
+    }
+
+
+@app.post("/recommendations")
+async def recommendations(file: UploadFile = File(...)):
+    """Return the top careers with their skill-alignment context."""
+    text = await read_resume_text(file)
+    result = predict_careers(text)
+    recommendations = []
+    for item in result["predictions"][:3]:
+        recommendations.append({
+            "role": item["role"],
+            "career_probability": item["probability"],
+            "skill_alignment": item["alignment_score"],
+            "next_step": f"Prioritize the high-priority skills in the {item['role']} gap report.",
+        })
+    return {"filename": file.filename, "recommendations": recommendations}
+
+
+@app.post("/gap-report")
+async def gap_report(file: UploadFile = File(...), target_role: str = ""):
+    """Create an actionable skill-gap report for a selected or best-fit career."""
+    text = await read_resume_text(file)
+    result = predict_careers(text)
+    target = next((item for item in result["predictions"] if item["role"].lower() == target_role.lower()), None)
+    target = target or result["predictions"][0]
+    return {
+        "filename": file.filename,
+        "target_role": target["role"],
+        "career_probability": target["probability"],
+        "alignment_score": target["alignment_score"],
+        "matched_skills": target["matched_skills"],
+        "missing_skills": target["missing_skills"],
+        "improvement_plan": build_gap_actions(target["missing_skills"]),
     }
 
 
