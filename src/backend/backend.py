@@ -431,23 +431,21 @@ async def gap_report(file: UploadFile = File(...), target_role: str = ""):
     """Create an actionable skill-gap report for a selected or best-fit career."""
     text = await read_resume_text(file)
     result = predict_careers(text)
-    target = next((item for item in result["predictions"] if item["role"].lower() == target_role.lower()), None)
-    target = target or result["predictions"][0]
 
-    matched = target.get("matched_skills", [])
-    missing = target.get("missing_skills", [])
-    improvement_plan = build_gap_actions(missing)
+    if target_role:
+        targets = [next((item for item in result["predictions"] if item["role"].lower() == target_role.lower()), None)]
+        targets = [t for t in targets if t]
+    else:
+        targets = result["predictions"][:3]
 
-    high_priority = [a["skill"] for a in improvement_plan if a["priority"] == "high"]
-    medium_priority = [a["skill"] for a in improvement_plan if a["priority"] == "medium"]
-    low_priority = [a["skill"] for a in improvement_plan if a["priority"] == "low"]
-
-    resume_skills_count = len([v for v in result.get("skill_flags", {}).values() if v == 1])
-
-    return {
-        "status": "success",
-        "filename": file.filename,
-        "report": {
+    def build_report(target):
+        matched = target.get("matched_skills", [])
+        missing = target.get("missing_skills", [])
+        improvement_plan = build_gap_actions(missing)
+        high_priority = [a["skill"] for a in improvement_plan if a["priority"] == "high"]
+        medium_priority = [a["skill"] for a in improvement_plan if a["priority"] == "medium"]
+        low_priority = [a["skill"] for a in improvement_plan if a["priority"] == "low"]
+        return {
             "career_overview": {
                 "role": target["role"],
                 "career_probability": target.get("probability", target.get("combined_score", 0)),
@@ -474,10 +472,18 @@ async def gap_report(file: UploadFile = File(...), target_role: str = ""):
                 "low": low_priority,
             },
             "improvement_plan": improvement_plan,
-            "resume_stats": {
-                "total_skills_detected": resume_skills_count,
-                "top_skills": result.get("extracted_skills", [])[:10],
-            },
+        }
+
+    reports = [build_report(t) for t in targets]
+    resume_skills_count = len([v for v in result.get("skill_flags", {}).values() if v == 1])
+
+    return {
+        "status": "success",
+        "filename": file.filename,
+        "reports": reports,
+        "resume_stats": {
+            "total_skills_detected": resume_skills_count,
+            "top_skills": result.get("extracted_skills", [])[:10],
         },
     }
 
