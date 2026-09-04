@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AnalyticsPage from './AnalyticsPage';
 
 // NOTE: left exactly as-is per request — do not change this line.
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 // ── VALIDATION ─────────────────────────────────────────────
 function validateProfile(form) {
