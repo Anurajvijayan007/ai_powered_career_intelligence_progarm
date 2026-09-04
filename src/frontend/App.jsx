@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import AnalyticsPage from './AnalyticsPage';
+import CareerComparisonPage from './CareerComparisonPage';
 
 // NOTE: left exactly as-is per request — do not change this line.
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -514,190 +515,9 @@ function PredictionDetail({ item }) {
   );
 }
 
-// ── CAREER REPORTS PAGE ─────────────────────────────────────
-function CareerReportBlock({ report, index }) {
-  const overview = report?.career_overview || {};
-  const breakdown = report?.score_breakdown || [];
-  const alignment = report?.skill_alignment || {};
-  const priorities = report?.priority_breakdown || {};
-  const plan = report?.improvement_plan || [];
-
-  const getScoreColor = (val) => {
-    if (val >= 70) return '#34d399';
-    if (val >= 40) return '#fbbf24';
-    return '#f87171';
-  };
-
-  const getPriorityStyle = (p) => {
-    if (p === 'high') return { bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.4)', text: '#f87171', label: 'HIGH' };
-    if (p === 'medium') return { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)', text: '#fbbf24', label: 'MEDIUM' };
-    return { bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)', text: '#60a5fa', label: 'LOW' };
-  };
-
-  return (
-    <div style={{ backgroundColor: '#1e293b', borderRadius: '14px', padding: '24px', border: '1px solid #334155' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <div style={{ color: '#2563eb', fontSize: '0.78rem', fontWeight: '700', marginBottom: '4px' }}>#{index + 1} TARGET ROLE</div>
-          <div style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>{overview.role}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ color: getScoreColor(overview.combined_score || overview.career_probability || 0), fontSize: '1.8rem', fontWeight: '900' }}>{overview.combined_score || overview.career_probability || 0}%</div>
-          <div style={{ color: '#64748b', fontSize: '0.78rem' }}>Overall Match</div>
-        </div>
-      </div>
-
-      {/* Score Breakdown */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: '700', marginBottom: '10px' }}>SCORE BREAKDOWN</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-          {breakdown.map((b, i) => (
-            <div key={i} style={{ backgroundColor: '#0f172a', borderRadius: '8px', padding: '12px', textAlign: 'center', border: '1px solid #1e293b' }}>
-              <div style={{ color: b.color || '#94a3b8', fontSize: '0.68rem', fontWeight: '700', marginBottom: '4px' }}>{b.label}</div>
-              <div style={{ color: '#fff', fontSize: '1.2rem', fontWeight: '800' }}>{b.value}{b.unit}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Skill Alignment */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '700' }}>SKILL ALIGNMENT</span>
-          <span style={{ fontSize: '0.85rem', color: '#34d399', fontWeight: '700' }}>{alignment.alignment_percentage || 0}%</span>
-        </div>
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '4px', height: '6px', marginBottom: '10px' }}>
-          <div style={{ width: `${Math.min(alignment.alignment_percentage || 0, 100)}%`, height: '6px', backgroundColor: '#34d399', borderRadius: '4px', transition: 'width 0.6s ease' }} />
-        </div>
-        <div style={{ display: 'flex', gap: '16px', fontSize: '0.82rem', color: '#64748b', marginBottom: '10px' }}>
-          <span><b style={{ color: '#34d399' }}>{alignment.matched_count || 0}</b> matched</span>
-          <span><b style={{ color: '#fbbf24' }}>{alignment.missing_count || 0}</b> missing</span>
-        </div>
-        {alignment.matched_skills?.length > 0 && (
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>Matched Skills</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {alignment.matched_skills.map((skill, i) => (
-                <span key={i} style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.35)', padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '500' }}>{skill}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {alignment.missing_skills?.length > 0 && (
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '6px', fontWeight: '600' }}>Missing Skills</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {alignment.missing_skills.map((skill, i) => (
-                <span key={i} style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.35)', padding: '3px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '500' }}>{skill}</span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Priority Breakdown */}
-      {(priorities.high?.length > 0 || priorities.medium?.length > 0 || priorities.low?.length > 0) && (
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: '700', marginBottom: '10px' }}>PRIORITY BREAKDOWN</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {['high', 'medium', 'low'].map((level) => {
-              const skills = priorities[level] || [];
-              if (skills.length === 0) return null;
-              const style = getPriorityStyle(level);
-              return (
-                <div key={level} style={{ backgroundColor: style.bg, border: `1px solid ${style.border}`, borderRadius: '8px', padding: '10px 12px' }}>
-                  <div style={{ color: style.text, fontSize: '0.68rem', fontWeight: '700', marginBottom: '4px' }}>{style.label} PRIORITY ({skills.length})</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                    {skills.map((skill, i) => (
-                      <span key={i} style={{ color: style.text, border: `1px solid ${style.border}`, padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '500' }}>{skill}</span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Improvement Plan */}
-      {plan.length > 0 && (
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: '700', marginBottom: '10px' }}>IMPROVEMENT PLAN</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {plan.map((step, i) => {
-              const pStyle = getPriorityStyle(step.priority);
-              return (
-                <div key={i} style={{ backgroundColor: '#0f172a', borderRadius: '8px', padding: '12px', border: '1px solid #1e293b' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: '700' }}>{i + 1}. {step.skill}</span>
-                    <span style={{ color: pStyle.text, border: `1px solid ${pStyle.border}`, padding: '2px 8px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '700', backgroundColor: pStyle.bg }}>{pStyle.label}</span>
-                  </div>
-                  <div style={{ color: '#94a3b8', fontSize: '0.78rem', marginBottom: '4px' }}>
-                    Resource: <a href={step.resource_url} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', textDecoration: 'none' }}>{step.recommended_resource}</a>
-                  </div>
-                  <div style={{ color: '#64748b', fontSize: '0.78rem', fontStyle: 'italic' }}>{step.practice_task}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CareerReportsPage({ loading, data, error, onBack }) {
-  const reports = data?.reports || [];
-  const stats = data?.resume_stats || {};
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '28px 32px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ color: '#fff', fontWeight: '800', fontSize: '1.3rem' }}>Career Gap Reports</div>
-          <div style={{ color: '#64748b', fontSize: '0.85rem', marginTop: '4px' }}>Detailed skill-gap analysis for your top {Math.min(reports.length, 3)} predicted careers</div>
-        </div>
-        <button onClick={onBack} style={{ backgroundColor: '#334155', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
-          ← Back to Predictions
-        </button>
-      </div>
-
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <div style={{ width: '40px', height: '40px', margin: '0 auto', border: '4px solid #334155', borderTop: '4px solid #2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-          <p style={{ color: '#94a3b8', marginTop: '16px', fontSize: '0.95rem' }}>Generating career gap reports...</p>
-        </div>
-      )}
-
-      {error && !loading && (
-        <div style={{ backgroundColor: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171', padding: '16px', borderRadius: '10px', fontSize: '0.9rem' }}>{error}</div>
-      )}
-
-      {!loading && !error && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {reports.map((report, idx) => (
-            <CareerReportBlock key={report.career_overview?.role || idx} report={report} index={idx} />
-          ))}
-
-          {/* Resume Stats */}
-          <div style={{ backgroundColor: 'rgba(37,99,235,0.1)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: '10px', padding: '16px' }}>
-            <div style={{ color: '#93c5fd', fontSize: '0.78rem', fontWeight: '700', marginBottom: '6px' }}>RESUME INSIGHTS</div>
-            <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-              <span style={{ color: '#fff', fontWeight: '700' }}>{stats.total_skills_detected || 0}</span> skills detected from resume
-              {stats.top_skills?.length > 0 && (
-                <span style={{ marginLeft: '10px' }}>Top: <b style={{ color: '#cbd5e1' }}>{stats.top_skills.slice(0, 5).join(', ')}</b></span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── MAIN APP ───────────────────────────────────────────────
 export default function App() {
-  const [page, setPage]                       = useState('main'); // 'main' | 'analytics' | 'reports'
+  const [page, setPage]                       = useState('main'); // 'main' | 'analytics' | 'compare'
   const [isLoggedIn, setIsLoggedIn]           = useState(false);
   const [showLogin, setShowLogin]             = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -712,192 +532,7 @@ export default function App() {
   const [hasResult, setHasResult]             = useState(false);
   const [userProfile, setUserProfile]         = useState(null);
   const [activeTab, setActiveTab]             = useState('resume'); // 'resume' | 'profile'
-  const [reportsLoading, setReportsLoading]   = useState(false);
-  const [reportsData, setReportsData]         = useState(null);
-  const [reportsError, setReportsError]       = useState('');
-
-  useEffect(() => {
-    if (page !== 'reports' || !uploadedResumeFile) return;
-    let cancelled = false;
-    setReportsLoading(true);
-    setReportsError('');
-    setReportsData(null);
-    const formData = new FormData();
-    formData.append('file', uploadedResumeFile);
-    fetch(`${BACKEND_URL}/gap-report`, { method: 'POST', body: formData })
-      .then(async (res) => {
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Failed to load reports');
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) setReportsData(data);
-      })
-      .catch((err) => { if (!cancelled) setReportsError(err.message); })
-      .finally(() => { if (!cancelled) setReportsLoading(false); });
-    return () => { cancelled = true; };
-  }, [page, uploadedResumeFile, BACKEND_URL]);
-
-   // ── PDF EXPORT ─────────────────────────────────────────────
-const exportPDF = () => {
-  const date = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' });
-
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8"/>
-      <title>CareerCast AI - Career Prediction Report</title>
-      <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; background: #fff; padding: 40px; }
-        .header { border-bottom: 3px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px; }
-        .logo { font-size: 22px; font-weight: 800; color: #1e3a8a; }
-        .subtitle { font-size: 12px; color: #64748b; margin-top: 3px; }
-        .meta { font-size: 11px; color: #94a3b8; margin-top: 6px; }
-        h2 { font-size: 16px; color: #1e3a8a; margin: 24px 0 10px; border-left: 4px solid #2563eb; padding-left: 10px; }
-        h3 { font-size: 14px; color: #2563eb; margin: 16px 0 8px; }
-        .skills-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-        .skill-badge { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-        .career-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 14px; page-break-inside: avoid; }
-        .career-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .career-rank { background: #1e40af; color: #fff; border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: 700; }
-        .career-title { font-size: 15px; font-weight: 700; color: #0f172a; }
-        .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
-        .score-box { background: #f8fafc; border-radius: 6px; padding: 8px; text-align: center; border: 1px solid #e2e8f0; }
-        .score-label { font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
-        .score-val { font-size: 16px; font-weight: 800; margin-top: 2px; }
-        .bar-row { margin-bottom: 6px; }
-        .bar-label { font-size: 10px; color: #64748b; margin-bottom: 3px; font-weight: 600; }
-        .bar-bg { background: #f1f5f9; border-radius: 4px; height: 8px; }
-        .bar-fill { height: 8px; border-radius: 4px; }
-        .skills-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-        .matched { background: #dcfce7; color: #166534; border: 1px solid #86efac; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
-        .missing  { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
-        .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        .summary-table th { background: #1e3a8a; color: #fff; padding: 8px 10px; text-align: left; }
-        .summary-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
-        .summary-table tr:nth-child(even) td { background: #f8fafc; }
-        .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
-        .green { color: #16a34a; } .blue { color: #2563eb; } .purple { color: #7c3aed; }
-        @media print { body { padding: 20px; } }
-      </style>
-    </head>
-    <body>
-
-      <!-- HEADER -->
-      <div class="header">
-        <div class="logo">CareerCast AI Prediction</div>
-        <div class="subtitle">Powered by SpaCy NER + Sentence-BERT + Logistic Regression</div>
-        <div class="meta">Report generated: ${date} &nbsp;|&nbsp; File: ${filename || 'User Profile'} &nbsp;|&nbsp; Model: Logistic Regression (Per-label Accuracy: 95.4%)</div>
-      </div>
-
-      <!-- EXTRACTED SKILLS -->
-      <h2>Extracted Skills (${extractedSkills.length} detected)</h2>
-      <div class="skills-grid">
-        ${extractedSkills.map(s => `<span class="skill-badge">${s}</span>`).join('')}
-        ${extractedSkills.length === 0 ? '<span style="color:#94a3b8;font-size:12px">No skills detected</span>' : ''}
-      </div>
-
-      <!-- CAREER PREDICTIONS -->
-      <h2>Top ${predictions.length} Career Predictions</h2>
-      ${predictions.map((item, idx) => {
-        const combined = item.combined || item.probability;
-        const scoreColor = combined >= 70 ? '#16a34a' : combined >= 40 ? '#d97706' : '#dc2626';
-        const barColor   = combined >= 70 ? '#22c55e' : combined >= 40 ? '#f59e0b' : '#ef4444';
-        return `
-        <div class="career-card">
-          <div class="career-header">
-            <div style="display:flex;align-items:center;gap:10px">
-              <span class="career-rank">#${idx+1}</span>
-              <span class="career-title">${item.role}</span>
-            </div>
-            <span style="font-size:20px;font-weight:800;color:${scoreColor}">${combined}%</span>
-          </div>
-
-          <div class="score-grid">
-              <div class="score-box">
-              <div class="score-label">ML Score</div>
-              <div class="score-val blue">${item.ml_probability ?? combined}%</div>
-            </div>
-            <div class="score-box">
-              <div class="score-label">SBERT Sim</div>
-              <div class="score-val purple">${item.sbert_similarity ?? 0}%</div>
-            </div>
-            <div class="score-box">
-              <div class="score-label">Combined</div>
-              <div class="score-val" style="color:${scoreColor}">${combined}%</div>
-            </div>
-            <div class="score-box">
-              <div class="score-label">Skill Align</div>
-              <div class="score-val green">${item.alignment_score ?? 0}%</div>
-            </div>
-          </div>
-
-          <div class="bar-row">
-            <div class="bar-label">Confidence</div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(combined,100)}%;background:${barColor}"></div></div>
-          </div>
-          <div class="bar-row">
-            <div class="bar-label">Skill Alignment</div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(item.alignment_score??0,100)}%;background:#22c55e"></div></div>
-          </div>
-
-          ${item.matched_skills && item.matched_skills.length > 0 ? `
-          <div style="margin-top:8px">
-            <div class="bar-label">Matched Skills</div>
-            <div class="skills-row">${item.matched_skills.map(s=>`<span class="matched">${s}</span>`).join('')}</div>
-          </div>` : ''}
-
-          ${item.missing_skills && item.missing_skills.length > 0 ? `
-          <div style="margin-top:8px">
-            <div class="bar-label">Skills to Learn</div>
-            <div class="skills-row">${item.missing_skills.map(s=>`<span class="missing">${s}</span>`).join('')}</div>
-          </div>` : ''}
-        </div>`;
-      }).join('')}
-
-      <!-- SKILL GAP SUMMARY TABLE -->
-      <h2>Skill Gap Analysis Summary</h2>
-      <table class="summary-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Career</th>
-            <th>Combined Score</th>
-            <th>Skill Alignment</th>
-            <th>Matched</th>
-            <th>To Learn</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${predictions.map((item,idx) => `
-          <tr>
-            <td><strong>#${idx+1}</strong></td>
-            <td><strong>${item.role}</strong></td>
-            <td style="color:${(item.combined||item.probability)>=70?'#16a34a':'#d97706'};font-weight:700">${item.combined||item.probability}%</td>
-            <td>${item.alignment_score ?? 0}%</td>
-            <td>${(item.matched_skills||[]).join(', ') || '-'}</td>
-            <td>${(item.missing_skills||[]).join(', ') || '-'}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-
-      <!-- FOOTER -->
-      <div class="footer">
-        <span>CareerCast AI Prediction &nbsp;|&nbsp; Anuraj Vijayan K &nbsp;|&nbsp; Amrita Vishwa Vidyapeetham</span>
-        <span>${date}</span>
-      </div>
-
-    </body>
-    </html>
-  `;
-
-  const win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { win.print(); }, 500);
-};
+   
   // Gate for anything that should require login before opening
   const requireLogin = (action) => {
     if (!isLoggedIn) {
@@ -1052,23 +687,14 @@ const exportPDF = () => {
           <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Powered by SpaCy NER + Logistic Regression + SBERT</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {page === 'main' ? (
-            <>
-              <button onClick={() => setPage('analytics')}
-                style={{ backgroundColor: '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
-                Analytics
-              </button>
-              <button onClick={() => setPage('reports')}
-                style={{ backgroundColor: '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
-                Report
-              </button>
-            </>
-          ) : (
-            <button onClick={() => setPage('main')}
-              style={{ backgroundColor: '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
-              ← Back to App
-            </button>
-          )}
+          <button onClick={() => setPage(page === 'main' ? 'analytics' : 'main')}
+            style={{ backgroundColor: page === 'analytics' ? '#2563eb' : '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
+            {page === 'main' ? 'Analytics' : 'Back to App'}
+          </button>
+          <button onClick={() => setPage(page === 'main' ? 'compare' : 'main')}
+            style={{ backgroundColor: page === 'compare' ? '#2563eb' : '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
+            {page === 'main' ? 'Compare' : 'Back to App'}
+          </button>
           {isLoggedIn && (
             <button onClick={() => setShowProfileForm(true)}
               style={{ backgroundColor: '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
@@ -1090,15 +716,10 @@ const exportPDF = () => {
       </header>
 
       {/* MAIN */}
-      {page === 'reports' ? (
-        <CareerReportsPage
-          loading={reportsLoading}
-          data={reportsData}
-          error={reportsError}
-          onBack={() => setPage('main')}
-        />
-      ) : page === 'analytics' ? (
+      {page === 'analytics' ? (
         <AnalyticsPage BACKEND_URL={BACKEND_URL} resumeFile={uploadedResumeFile} />
+      ) : page === 'compare' ? (
+        <CareerComparisonPage BACKEND_URL={BACKEND_URL} resumeFile={uploadedResumeFile} predictions={predictions} onBack={() => setPage('main')} />
       ) : (
       <main style={{ display: 'flex', gap: '24px', padding: '28px 32px', maxWidth: '1200px', margin: '0 auto', flexWrap: 'wrap' }}>
 
@@ -1284,11 +905,6 @@ const exportPDF = () => {
                 </div>
               </div>
 
-              {hasResult && (
-                <button onClick={exportPDF} style={{ width: '100%', padding: '11px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem', marginBottom: '10px' }}>
-                  Export Report (PDF)
-                </button>
-              )}
               <button onClick={reset} style={{ width: '100%', padding: '11px', backgroundColor: '#334155', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem' }}>
                 Start Over
               </button>
