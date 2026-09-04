@@ -116,6 +116,41 @@ export default function AnalyticsPage({ BACKEND_URL, resumeFile }) {
           </svg>
         </div>}
       </section>
+
+      <section style={{ backgroundColor: '#1e293b', borderRadius: '14px', padding: '24px', border: '1px solid #334155' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#fff', marginBottom: '8px' }}>Cohort Analytics</h3>
+        <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '16px' }}>Aggregate model performance statistics across the evaluation dataset.</p>
+        {!metricsLoading && !metricsError && modelMetrics.length > 0 && <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: '600', marginBottom: '4px' }}>MODELS EVALUATED</div>
+              <div style={{ color: '#fff', fontSize: '1.6rem', fontWeight: '800' }}>{modelMetrics.length}</div>
+            </div>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: '600', marginBottom: '4px' }}>BEST MODEL</div>
+              <div style={{ color: '#34d399', fontSize: '1rem', fontWeight: '700' }}>{modelMetrics.reduce((best, m) => (Number(m.score_out_of_10) > Number(best.score_out_of_10) ? m : best), modelMetrics[0]).model}</div>
+            </div>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: '600', marginBottom: '4px' }}>AVG MACRO F1</div>
+              <div style={{ color: '#fff', fontSize: '1.6rem', fontWeight: '800' }}>{(modelMetrics.reduce((sum, m) => sum + Number(m.score_out_of_10), 0) / modelMetrics.length).toFixed(2)}</div>
+            </div>
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+              <div style={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: '600', marginBottom: '4px' }}>DATASET SIZE</div>
+              <div style={{ color: '#fff', fontSize: '1.6rem', fontWeight: '800' }}>{evaluation?.dataset_rows || '—'}</div>
+            </div>
+          </div>
+          <div style={{ backgroundColor: '#0f172a', borderRadius: '10px', padding: '16px' }}>
+            <div style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: '600', marginBottom: '10px' }}>MODEL RANKING</div>
+            {[...modelMetrics].sort((a, b) => Number(b.score_out_of_10) - Number(a.score_out_of_10)).map((metric, idx) => (
+              <div key={metric.model} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ backgroundColor: MODEL_COLORS[metric.model] || '#64748b', color: '#fff', borderRadius: '6px', padding: '4px 8px', fontSize: '0.72rem', fontWeight: '700', minWidth: '24px', textAlign: 'center' }}>#{idx + 1}</div>
+                <div style={{ flex: 1, color: '#cbd5e1', fontSize: '0.85rem', fontWeight: '600' }}>{metric.model}</div>
+                <div style={{ color: '#34d399', fontSize: '0.85rem', fontWeight: '700' }}>{Number(metric.score_out_of_10).toFixed(2)} / 10</div>
+              </div>
+            ))}
+          </div>
+        </>}
+      </section>
     </div>
   );
 }
