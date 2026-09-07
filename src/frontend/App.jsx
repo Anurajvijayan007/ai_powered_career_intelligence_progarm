@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AnalyticsPage from './AnalyticsPage';
 import CareerComparisonPage from './CareerComparisonPage';
+import GapReportPage from './GapReportPage';
 
 // NOTE: left exactly as-is per request — do not change this line.
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -517,7 +518,7 @@ function PredictionDetail({ item }) {
 
 // ── MAIN APP ───────────────────────────────────────────────
 export default function App() {
-  const [page, setPage]                       = useState('main'); // 'main' | 'analytics' | 'compare'
+  const [page, setPage]                       = useState('main'); // 'main' | 'analytics' | 'compare' | 'gap'
   const [isLoggedIn, setIsLoggedIn]           = useState(false);
   const [showLogin, setShowLogin]             = useState(false);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -695,6 +696,10 @@ export default function App() {
             style={{ backgroundColor: page === 'compare' ? '#2563eb' : '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
             {page === 'main' ? 'Compare' : 'Back to App'}
           </button>
+          <button onClick={() => hasResult ? setPage(page === 'main' ? 'gap' : 'main') : null}
+            style={{ backgroundColor: page === 'gap' ? '#2563eb' : (hasResult ? '#334155' : '#1e293b'), color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: hasResult ? 'pointer' : 'not-allowed', fontSize: '0.88rem', opacity: hasResult ? 1 : 0.5 }}>
+            {page === 'main' ? 'Gap Report' : 'Back to App'}
+          </button>
           {isLoggedIn && (
             <button onClick={() => setShowProfileForm(true)}
               style={{ backgroundColor: '#334155', color: '#fff', padding: '9px 18px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '0.88rem' }}>
@@ -720,6 +725,8 @@ export default function App() {
         <AnalyticsPage BACKEND_URL={BACKEND_URL} resumeFile={uploadedResumeFile} />
       ) : page === 'compare' ? (
         <CareerComparisonPage BACKEND_URL={BACKEND_URL} resumeFile={uploadedResumeFile} predictions={predictions} onBack={() => setPage('main')} />
+      ) : page === 'gap' ? (
+        <GapReportPage BACKEND_URL={BACKEND_URL} resumeFile={uploadedResumeFile} onBack={() => setPage('main')} />
       ) : (
       <main style={{ display: 'flex', gap: '24px', padding: '28px 32px', maxWidth: '1200px', margin: '0 auto', flexWrap: 'wrap' }}>
 
